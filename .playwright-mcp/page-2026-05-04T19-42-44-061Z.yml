@@ -1,0 +1,53 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e9]: Live 1v1 Mog Arena
+    - heading "Omoggle" [level=1] [ref=e10]
+    - button "⚔️ Enter the Arena Start Camera Check → By entering the arena you agree to our Terms of Service and Privacy Policy." [ref=e11] [cursor=pointer]:
+      - generic [ref=e12]:
+        - generic [ref=e13]: ⚔️
+        - heading "Enter the Arena" [level=2] [ref=e14]
+        - generic [ref=e15]: Start Camera Check →
+        - paragraph:
+          - text: By entering the arena you agree to our
+          - link "Terms of Service" [ref=e16]:
+            - /url: /tos
+          - text: and
+          - link "Privacy Policy" [ref=e17]:
+            - /url: /privacy
+          - text: .
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]: "1"
+          - generic [ref=e22]:
+            - heading "Camera Check" [level=3] [ref=e23]
+            - paragraph [ref=e24]: Complete a quick camera check to get started.
+        - generic [ref=e25]: ›
+      - generic [ref=e26]:
+        - generic [ref=e27]:
+          - generic [ref=e28]: "2"
+          - generic [ref=e29]:
+            - heading "Solo PSL Scan" [level=3] [ref=e30]
+            - paragraph [ref=e31]: Take a Solo PSL Scan to verify you mog.
+        - generic [ref=e32]: ›
+      - generic [ref=e34]:
+        - generic [ref=e35]: "3"
+        - generic [ref=e36]:
+          - heading "Compete & Climb" [level=3] [ref=e37]
+          - paragraph [ref=e38]: Win matches, earn points, and climb the ladder.
+    - generic [ref=e39]:
+      - button "🏆 View Leaderboard See top players and rankings. ›" [ref=e40] [cursor=pointer]:
+        - generic [ref=e42]: 🏆
+        - generic [ref=e43]:
+          - generic [ref=e44]: View Leaderboard
+          - generic [ref=e45]: See top players and rankings.
+        - generic [ref=e46]: ›
+      - link "Join Discord Chat, events & updates. ›" [ref=e47] [cursor=pointer]:
+        - /url: https://discord.gg/V3NPDPwwu9
+        - img [ref=e50]
+        - generic [ref=e52]:
+          - generic [ref=e53]: Join Discord
+          - generic [ref=e54]: Chat, events & updates.
+        - generic [ref=e55]: ›
+    - paragraph [ref=e56]: Anti-abuse session gate · 18+ acknowledgment · Not legal ID verification
+  - alert [ref=e57]

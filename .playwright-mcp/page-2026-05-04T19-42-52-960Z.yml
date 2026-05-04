@@ -1,0 +1,95 @@
+- generic [active] [ref=e1]:
+  - region "Policy update notice" [ref=e2]:
+    - paragraph [ref=e3]:
+      - text: We've updated our
+      - link "Privacy Policy" [ref=e4] [cursor=pointer]:
+        - /url: /privacy
+      - text: and
+      - link "Terms of Service" [ref=e5] [cursor=pointer]:
+        - /url: /tos
+      - text: . Please review them.
+    - button "Dismiss policy update notice" [ref=e6] [cursor=pointer]: ×
+  - main [ref=e7]:
+    - generic [ref=e8]:
+      - link "← ENTER ARENA" [ref=e10] [cursor=pointer]:
+        - /url: /?gate=1
+        - generic [ref=e11]: ←
+        - generic [ref=e12]: ENTER ARENA
+      - generic [ref=e13]:
+        - generic [ref=e15]:
+          - generic [ref=e17]:
+            - generic [ref=e18]: Season ends in
+            - generic [ref=e19]:
+              - generic [ref=e20]:
+                - generic [ref=e21]:
+                  - generic [ref=e22]: "27"
+                  - generic [ref=e23]: Days
+                - generic [ref=e24]: ":"
+              - generic [ref=e25]:
+                - generic [ref=e26]:
+                  - generic [ref=e27]: "03"
+                  - generic [ref=e28]: Hours
+                - generic [ref=e29]: ":"
+              - generic [ref=e30]:
+                - generic [ref=e31]:
+                  - generic [ref=e32]: "17"
+                  - generic [ref=e33]: Minutes
+                - generic [ref=e34]: ":"
+              - generic [ref=e36]:
+                - generic [ref=e37]: "07"
+                - generic [ref=e38]: Seconds
+            - generic [ref=e39]: Ranks reset every month
+            - button "View Rewards" [ref=e40] [cursor=pointer]
+          - generic [ref=e41]:
+            - generic [ref=e42]: 🌍 Global Arena
+            - generic [ref=e43]: 🏆 Season 1
+          - heading "Leaderboard" [level=1] [ref=e44]
+          - paragraph [ref=e45]: Top 100 ranked players by Elo. Only claimed accounts appear.
+          - paragraph [ref=e46]:
+            - generic [ref=e47]: Elo changes depend on opponent rating. Beating lower-rated players gives less, and losing to them costs more.
+            - link "?" [ref=e48] [cursor=pointer]:
+              - /url: /how-elo-works
+        - generic [ref=e50]:
+          - paragraph [ref=e51]: Rank Tiers
+          - generic [ref=e52]:
+            - generic [ref=e53]:
+              - generic [ref=e54]: ☠️
+              - generic [ref=e55]:
+                - generic [ref=e56]: Slayer
+                - generic [ref=e57]: 5,001+ ELO
+            - generic [ref=e58]:
+              - generic [ref=e59]: 👑
+              - generic [ref=e60]:
+                - generic [ref=e61]: Chad
+                - generic [ref=e62]: 3,501–5,000 ELO
+            - generic [ref=e63]:
+              - generic [ref=e64]: ⚜️
+              - generic [ref=e65]:
+                - generic [ref=e66]: Chadlite
+                - generic [ref=e67]: 2,001–3,500 ELO
+            - generic [ref=e68]:
+              - generic [ref=e69]: 🌟
+              - generic [ref=e70]:
+                - generic [ref=e71]: HTN
+                - generic [ref=e72]: 1,501–2,000 ELO
+            - generic [ref=e73]:
+              - generic [ref=e74]: ⭐
+              - generic [ref=e75]:
+                - generic [ref=e76]: MTN
+                - generic [ref=e77]: 1,001–1,500 ELO
+            - generic [ref=e78]:
+              - generic [ref=e79]: 🌙
+              - generic [ref=e80]:
+                - generic [ref=e81]: LTN
+                - generic [ref=e82]: 501–1,000 ELO
+            - generic [ref=e83]:
+              - generic [ref=e84]: 🥀
+              - generic [ref=e85]:
+                - generic [ref=e86]: Sub3
+                - generic [ref=e87]: 1–500 ELO
+            - generic [ref=e88]:
+              - generic [ref=e89]: 🗿
+              - generic [ref=e90]:
+                - generic [ref=e91]: Molecule
+                - generic [ref=e92]: "-∞–-1 ELO"
+  - alert [ref=e103]

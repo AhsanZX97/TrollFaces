@@ -1,0 +1,32 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - link "67Quick.com" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e5]: 67Quick.com
+      - link "▶ Play" [ref=e7] [cursor=pointer]:
+        - /url: /game
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e12]:
+            - heading "Global Leaderboard" [level=2] [ref=e13]
+            - paragraph [ref=e14]: Top 100 — resets every 48 hours
+          - generic [ref=e15]:
+            - generic [ref=e16]: Resets in
+            - generic [ref=e17]: 4h 17m
+        - button "Refresh" [disabled] [ref=e19]:
+          - img [ref=e20]
+          - text: Refresh
+      - paragraph [ref=e34]: Sign in with Google to save your scores and compete on this leaderboard
+      - link "▶ Play Now" [ref=e38] [cursor=pointer]:
+        - /url: /
+    - generic [ref=e40]:
+      - link "Terms & Conditions" [ref=e41] [cursor=pointer]:
+        - /url: /terms
+      - generic [ref=e42]: ·
+      - link "Privacy Policy" [ref=e43] [cursor=pointer]:
+        - /url: /privacy
+      - generic [ref=e44]: ·
+      - generic [ref=e45]: © 2026 67Quick
+  - alert [ref=e46]

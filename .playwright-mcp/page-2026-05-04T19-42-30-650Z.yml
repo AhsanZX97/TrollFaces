@@ -1,0 +1,49 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]: 67Quick.com
+      - link "🏆 Leaderboard" [ref=e6] [cursor=pointer]:
+        - /url: /leaderboard
+    - generic [ref=e8]:
+      - generic [ref=e9]: 67Quick
+      - paragraph [ref=e10]: The 67 motion speed challenge
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - textbox "Enter your username" [ref=e13]
+          - generic [ref=e15]: 0/20
+        - button "Enter a username to play" [disabled] [ref=e16]
+        - link "🏆 View Leaderboard" [ref=e17] [cursor=pointer]:
+          - /url: /leaderboard
+        - paragraph [ref=e19]: Sign in to save your score to the global leaderboard
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e25]: Global 67 Count
+          - generic [ref=e29]: "0"
+          - paragraph [ref=e30]: 67 motions worldwide
+        - generic [ref=e31]:
+          - generic [ref=e33]: Total Games Played
+          - generic [ref=e34]: "0"
+          - paragraph [ref=e35]: games played total
+      - generic [ref=e36]:
+        - heading "HOW TO PLAY" [level=3] [ref=e37]:
+          - generic [ref=e38]: HOW TO PLAY
+        - paragraph [ref=e39]: Stand in front of your camera with arms bent at elbows. Move your arms up and down alternately as fast as you can for 30 seconds.
+        - generic [ref=e40]:
+          - generic [ref=e41]:
+            - generic [ref=e42]: 📷
+            - generic [ref=e43]: Allow camera
+          - generic [ref=e44]:
+            - generic [ref=e45]: 💪
+            - generic [ref=e46]: Alternate arms
+          - generic [ref=e47]:
+            - generic [ref=e48]: ⚡
+            - generic [ref=e49]: Score points
+    - generic [ref=e51]:
+      - link "Terms & Conditions" [ref=e52] [cursor=pointer]:
+        - /url: /terms
+      - generic [ref=e53]: ·
+      - link "Privacy Policy" [ref=e54] [cursor=pointer]:
+        - /url: /privacy
+      - generic [ref=e55]: ·
+      - generic [ref=e56]: © 2026 67Quick
+  - alert [ref=e57]
