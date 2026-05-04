@@ -1,31 +1,82 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Repeat, Trophy } from 'lucide-react';
+import { Loader2, Repeat, Trophy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import type { LeaderboardEntry } from '@/features/leaderboard/types';
 import {
   buildLeaderboard,
   useLeaderboardStore,
 } from '@/features/leaderboard/use-leaderboard-store';
+import {
+  fetchLeaderboardRemote,
+  fetchRoundResultRemote,
+} from '@/features/leaderboard/supabase-leaderboard';
+import { isRemoteLeaderboardEnabled } from '@/lib/env';
+import type { RoundResult } from '@/features/round/types';
 import { ReferenceFace } from '@/features/round/reference-face';
 
 export function ResultsPage() {
   const { roundId } = useParams<{ roundId: string }>();
   const navigate = useNavigate();
-  const result = useLeaderboardStore((s) =>
+  const storeResult = useLeaderboardStore((s) =>
     roundId ? s.getResultById(roundId) : undefined,
   );
   const results = useLeaderboardStore((s) => s.results);
   const player = useLeaderboardStore((s) => s.player);
 
+  const [remoteResult, setRemoteResult] = useState<RoundResult | null>(null);
+  const [fetchingRemote, setFetchingRemote] = useState(false);
+  const remoteEnabled = isRemoteLeaderboardEnabled();
+
+  useEffect(() => {
+    if (!roundId || storeResult || !remoteEnabled) return;
+    setFetchingRemote(true);
+    fetchRoundResultRemote(roundId)
+      .then(setRemoteResult)
+      .catch(() => setRemoteResult(null))
+      .finally(() => setFetchingRemote(false));
+  }, [roundId, storeResult, remoteEnabled]);
+
+  const result = storeResult ?? remoteResult;
+
+  const [remoteBoard, setRemoteBoard] = useState<LeaderboardEntry[] | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!player || !result) return;
+    if (!remoteEnabled) {
+      setRemoteBoard(null);
+      return;
+    }
+    fetchLeaderboardRemote()
+      .then(setRemoteBoard)
+      .catch(() => setRemoteBoard(null));
+  }, [player, result, remoteEnabled]);
+
   const rank = useMemo(() => {
     if (!player) return null;
+    if (remoteEnabled) {
+      if (remoteBoard === null) return null;
+      const idx = remoteBoard.findIndex((b) => b.playerId === player.id);
+      return idx === -1 ? null : idx + 1;
+    }
     const board = buildLeaderboard(results);
     const idx = board.findIndex((b) => b.playerId === player.id);
     return idx === -1 ? null : idx + 1;
-  }, [results, player]);
+  }, [player, results, remoteBoard, remoteEnabled]);
+
+  if (fetchingRemote) {
+    return (
+      <div className="mx-auto flex max-w-md flex-col items-center gap-4 py-16 text-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Loading round…</p>
+      </div>
+    );
+  }
 
   if (!result) {
     return (

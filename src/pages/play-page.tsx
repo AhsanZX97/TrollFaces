@@ -31,6 +31,7 @@ export function PlayPage() {
   const [countdown, setCountdown] = useState<number>(COUNTDOWN_SECONDS);
   const [faceDetected, setFaceDetected] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const camera = useCamera({ width: 640, height: 480 });
   const landmarker = useFaceLandmarker();
@@ -109,6 +110,7 @@ export function PlayPage() {
 
   const handleStartRound = () => {
     if (phase !== 'ready') return;
+    setSaveError(null);
     setPhase('countdown');
     setCountdown(COUNTDOWN_SECONDS);
     let n = COUNTDOWN_SECONDS;
@@ -130,23 +132,33 @@ export function PlayPage() {
     if (phase !== 'scoring') return;
     stopSampling();
     const t = window.setTimeout(() => {
-      const out = scoreRound({ samples: samplesRef.current });
-      const points = pointsForScore(out.score);
-      const result = addResult({
-        score: out.score,
-        pointsAwarded: points,
-        detectionRate: out.detectionRate,
-        meta: {
-          framesSampled: out.framesSampled,
-          framesWithFace: out.framesWithFace,
-          avgFeatures: out.avgFeatures ?? undefined,
-        },
-      });
-      camera.stop();
-      navigate(`/results/${result.id}`, { replace: true });
+      void (async () => {
+        const out = scoreRound({ samples: samplesRef.current });
+        const points = pointsForScore(out.score);
+        try {
+          const result = await addResult({
+            score: out.score,
+            pointsAwarded: points,
+            detectionRate: out.detectionRate,
+            meta: {
+              framesSampled: out.framesSampled,
+              framesWithFace: out.framesWithFace,
+              avgFeatures: out.avgFeatures ?? undefined,
+            },
+          });
+          camera.stop();
+          navigate(`/results/${result.id}`, { replace: true });
+        } catch (e) {
+          const msg =
+            e instanceof Error ? e.message : 'Could not save your round.';
+          setSaveError(msg);
+          setPhase('ready');
+          timer.reset(ROUND_SECONDS);
+        }
+      })();
     }, 800);
     return () => window.clearTimeout(t);
-  }, [phase, addResult, camera, navigate, stopSampling]);
+  }, [phase, addResult, camera, navigate, stopSampling, timer]);
 
   const timerPct = useMemo(
     () => ((ROUND_SECONDS - timer.remaining) / ROUND_SECONDS) * 100,
@@ -206,6 +218,14 @@ export function PlayPage() {
               onRequestCamera={handleRequestCamera}
               onStart={handleStartRound}
             />
+            {saveError ? (
+              <p
+                role="alert"
+                className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
+              >
+                {saveError}
+              </p>
+            ) : null}
           </CardContent>
         </Card>
       </div>

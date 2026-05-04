@@ -67,9 +67,14 @@ npm run build    # type-check + production build
 
 The MediaPipe face landmarker model is fetched from a CDN on first load; it is then cached by the browser.
 
+### Shared leaderboard (optional)
+
+By default scores live in **localStorage**. To use a **free Supabase** database for a global leaderboard, copy `.env.example` to `.env`, add your project URL and anon key, run the SQL in `supabase/migrations/001_round_results.sql`, then restart the dev server. Full steps: [docs/supabase.md](docs/supabase.md).
+
 ## Docs
 
 - `docs/product.md`: product behavior + rules
 - `docs/architecture.md`: app structure + key modules
 - `docs/roadmap.md`: MVP milestones
+- `docs/supabase.md`: optional shared leaderboard on Supabase free tier
 

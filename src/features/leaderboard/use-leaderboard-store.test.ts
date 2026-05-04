@@ -13,9 +13,9 @@ describe('useLeaderboardStore', () => {
     expect(useLeaderboardStore.getState().player?.id).toBe(player.id);
   });
 
-  it('records a round result tied to the current player', () => {
+  it('records a round result tied to the current player', async () => {
     useLeaderboardStore.getState().setPlayer('Ahsan');
-    const result = useLeaderboardStore.getState().addResult({
+    const result = await useLeaderboardStore.getState().addResult({
       score: 82,
       pointsAwarded: 82,
       detectionRate: 0.9,
@@ -28,15 +28,15 @@ describe('useLeaderboardStore', () => {
     );
   });
 
-  it('throws when adding a result without a player', () => {
-    expect(() =>
+  it('throws when adding a result without a player', async () => {
+    await expect(
       useLeaderboardStore.getState().addResult({
         score: 50,
         pointsAwarded: 50,
         detectionRate: 1,
         meta: { framesSampled: 10, framesWithFace: 10 },
       }),
-    ).toThrow();
+    ).rejects.toThrow();
   });
 });
 

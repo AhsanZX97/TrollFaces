@@ -38,10 +38,10 @@
   - `createdAt`
   - `meta` (device hints, detection confidence summary; no raw frames)
 
-## Backend options (later)
-- **Supabase**: quick leaderboard + auth + storage (if we ever store thumbnails)
-- **Firebase**: similar, great realtime if we do live rooms
-- **Node/Express**: simple REST API + Postgres
+## Backend / persistence
+- **Supabase (optional)**: When `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set, round rows are inserted into Postgres and the leaderboard is read from a view. See `docs/supabase.md` and `supabase/migrations/001_round_results.sql`. Without env vars, leaderboard data stays in **localStorage** only.
+- **Firebase**: alternative for realtime rooms later
+- **Node/Express**: alternative if you want a custom API + Postgres
 
 ## Scoring strategy options
 We’ll choose one and iterate:

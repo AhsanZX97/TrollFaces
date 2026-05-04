@@ -1,9 +1,12 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Crown, Play, Trophy } from 'lucide-react';
+import { Crown, Loader2, Play, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { fetchLeaderboardRemote } from '@/features/leaderboard/supabase-leaderboard';
+import { isRemoteLeaderboardEnabled } from '@/lib/env';
+import type { LeaderboardEntry } from '@/features/leaderboard/types';
 import {
   buildLeaderboard,
   useLeaderboardStore,
@@ -12,8 +15,33 @@ import {
 export function LeaderboardPage() {
   const results = useLeaderboardStore((s) => s.results);
   const player = useLeaderboardStore((s) => s.player);
+  const remoteEnabled = isRemoteLeaderboardEnabled();
 
-  const board = useMemo(() => buildLeaderboard(results), [results]);
+  const localBoard = useMemo(() => buildLeaderboard(results), [results]);
+  const [remoteBoard, setRemoteBoard] = useState<LeaderboardEntry[] | null>(
+    null,
+  );
+  const [remoteLoading, setRemoteLoading] = useState(false);
+
+  useEffect(() => {
+    if (!remoteEnabled) {
+      setRemoteBoard(null);
+      return;
+    }
+    setRemoteLoading(true);
+    fetchLeaderboardRemote()
+      .then(setRemoteBoard)
+      .catch(() => setRemoteBoard([]))
+      .finally(() => setRemoteLoading(false));
+  }, [remoteEnabled]);
+
+  const board = useMemo(
+    () => (remoteEnabled ? remoteBoard ?? [] : localBoard),
+    [remoteEnabled, remoteBoard, localBoard],
+  );
+  const showRemoteSpinner =
+    remoteEnabled && remoteLoading && remoteBoard === null;
+
   const myRank = useMemo(() => {
     if (!player) return null;
     const idx = board.findIndex((b) => b.playerId === player.id);
@@ -50,7 +78,12 @@ export function LeaderboardPage() {
 
       <Card>
         <CardContent className="p-0">
-          {board.length === 0 ? (
+          {showRemoteSpinner ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-muted-foreground">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <p className="text-sm">Loading leaderboard…</p>
+            </div>
+          ) : board.length === 0 ? (
             <EmptyState />
           ) : (
             <ol className="divide-y">
@@ -91,8 +124,9 @@ export function LeaderboardPage() {
       </Card>
 
       <p className="text-center text-xs text-muted-foreground">
-        Stored locally in your browser. A shared global board ships in a later
-        milestone.
+        {remoteEnabled
+          ? 'Leaderboard data is stored in Supabase (shared across all players).'
+          : 'Scores are stored only in this browser until you add Supabase (see docs/supabase.md).'}
       </p>
     </div>
   );

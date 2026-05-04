@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { RoundResult } from '@/features/round/types';
+import type { LeaderboardEntry } from './types';
+import { isRemoteLeaderboardEnabled } from '@/lib/env';
+import { getSupabase } from '@/lib/supabase';
+import { insertRoundResultRemote } from '@/features/leaderboard/supabase-leaderboard';
 
 interface Player {
   id: string;
@@ -14,12 +18,19 @@ interface LeaderboardState {
   setPlayer: (displayName: string) => Player;
   addResult: (
     result: Omit<RoundResult, 'id' | 'createdAt' | 'playerId' | 'playerName'>,
-  ) => RoundResult;
+  ) => Promise<RoundResult>;
   getResultById: (id: string) => RoundResult | undefined;
   reset: () => void;
 }
 
 const generateId = () => Math.random().toString(36).slice(2, 11);
+
+function newId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return generateId();
+}
 
 export const useLeaderboardStore = create<LeaderboardState>()(
   persist(
@@ -33,21 +44,34 @@ export const useLeaderboardStore = create<LeaderboardState>()(
         const player: Player = existing
           ? { ...existing, displayName: trimmed }
           : {
-              id: generateId(),
+              id: newId(),
               displayName: trimmed,
               createdAt: Date.now(),
             };
         set({ player });
         return player;
       },
-      addResult: (partial) => {
+      addResult: async (partial) => {
         const player = get().player;
         if (!player) {
           throw new Error('Cannot record a result without a player');
         }
+        if (isRemoteLeaderboardEnabled()) {
+          const sb = getSupabase();
+          if (!sb) {
+            throw new Error('Supabase is enabled in env but client failed to init');
+          }
+          const result = await insertRoundResultRemote(sb, {
+            ...partial,
+            playerId: player.id,
+            playerName: player.displayName,
+          });
+          set((s) => ({ results: [result, ...s.results] }));
+          return result;
+        }
         const result: RoundResult = {
           ...partial,
-          id: generateId(),
+          id: newId(),
           playerId: player.id,
           playerName: player.displayName,
           createdAt: Date.now(),
@@ -69,14 +93,7 @@ export const useLeaderboardStore = create<LeaderboardState>()(
   ),
 );
 
-export interface LeaderboardEntry {
-  playerId: string;
-  playerName: string;
-  totalPoints: number;
-  bestScore: number;
-  rounds: number;
-  earliestAchievedAt: number;
-}
+export type { LeaderboardEntry } from './types';
 
 /**
  * Aggregate raw results into a sorted leaderboard.
