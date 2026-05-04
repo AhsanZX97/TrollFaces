@@ -4,26 +4,36 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  [
+    'relative inline-flex items-center justify-center gap-2 whitespace-nowrap',
+    'font-mono uppercase tracking-stamp',
+    'transition-[transform,box-shadow,background-color,color] duration-150 ease-out',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+    'disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0',
+    'select-none',
+  ].join(' '),
   {
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98]',
-        destructive:
-          'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+          'bg-ink text-paper border-2 border-ink shadow-stamp hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-stamp-pressed active:translate-x-[4px] active:translate-y-[4px] active:shadow-none',
+        accent:
+          'bg-accent text-accent-foreground border-2 border-ink shadow-stamp hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-stamp-pressed active:translate-x-[4px] active:translate-y-[4px] active:shadow-none',
         outline:
-          'border border-input bg-background hover:bg-accent/10 hover:text-accent-foreground',
+          'bg-paper text-ink border-2 border-ink shadow-stamp hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-stamp-pressed active:translate-x-[4px] active:translate-y-[4px] active:shadow-none',
+        ghost:
+          'bg-transparent text-ink border-2 border-transparent hover:border-ink',
+        link: 'text-ink underline underline-offset-[6px] decoration-2 decoration-accent hover:text-accent',
+        destructive:
+          'bg-destructive text-destructive-foreground border-2 border-ink shadow-stamp hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-stamp-pressed',
         secondary:
-          'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        ghost: 'hover:bg-accent/10 hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
+          'bg-secondary text-secondary-foreground border-2 border-ink shadow-stamp hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-stamp-pressed',
       },
       size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-9 rounded-md px-3',
-        lg: 'h-12 rounded-lg px-8 text-base',
-        icon: 'h-10 w-10',
+        sm: 'h-10 px-4 text-[11px]',
+        default: 'h-12 px-5 text-xs',
+        lg: 'h-14 px-7 text-sm',
+        icon: 'h-12 w-12',
       },
     },
     defaultVariants: {

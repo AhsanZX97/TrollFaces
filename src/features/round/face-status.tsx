@@ -8,20 +8,22 @@ interface FaceStatusProps {
 
 export function FaceStatus({ detected, hint }: FaceStatusProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Badge variant={detected ? 'success' : 'warning'}>
         {detected ? (
           <>
-            <Eye className="mr-1 h-3 w-3" /> Face detected
+            <Eye className="h-3 w-3" /> Face locked
           </>
         ) : (
           <>
-            <EyeOff className="mr-1 h-3 w-3" /> Looking for face…
+            <EyeOff className="h-3 w-3" /> Searching…
           </>
         )}
       </Badge>
       {hint ? (
-        <span className="text-xs text-muted-foreground">{hint}</span>
+        <span className="font-mono text-[10px] uppercase tracking-stamp text-muted-fg">
+          {hint}
+        </span>
       ) : null}
     </div>
   );

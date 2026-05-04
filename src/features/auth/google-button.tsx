@@ -1,36 +1,57 @@
 import * as React from 'react';
 import { Loader2 } from 'lucide-react';
-import { Button, type ButtonProps } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-interface GoogleButtonProps extends Omit<ButtonProps, 'variant'> {
+interface GoogleButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
+  size?: 'default' | 'lg';
 }
 
 export const GoogleButton = React.forwardRef<
   HTMLButtonElement,
   GoogleButtonProps
->(({ className, loading, children, disabled, ...props }, ref) => {
-  return (
-    <Button
-      ref={ref}
-      variant="outline"
-      className={cn(
-        'border-input bg-background hover:bg-accent/10',
-        className,
-      )}
-      disabled={disabled || loading}
-      {...props}
-    >
-      {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <GoogleIcon className="h-4 w-4" />
-      )}
-      <span>{children ?? 'Continue with Google'}</span>
-    </Button>
-  );
-});
+>(
+  (
+    { className, loading, children, disabled, size = 'lg', ...props },
+    ref,
+  ) => {
+    return (
+      <button
+        ref={ref}
+        type={props.type ?? 'button'}
+        disabled={disabled || loading}
+        className={cn(
+          'group relative inline-flex w-full items-center justify-center gap-3',
+          'border-2 border-ink bg-paper text-ink',
+          'font-mono uppercase tracking-stamp',
+          'shadow-stamp transition-[transform,box-shadow,background-color] duration-150 ease-out',
+          'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-stamp-pressed',
+          'active:translate-x-[4px] active:translate-y-[4px] active:shadow-none',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+          'disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-stamp',
+          size === 'lg' ? 'h-14 px-6 text-sm' : 'h-12 px-5 text-xs',
+          className,
+        )}
+        {...props}
+      >
+        <span
+          aria-hidden
+          className="flex h-7 w-7 items-center justify-center border-2 border-ink bg-paper"
+        >
+          {loading ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <GoogleIcon className="h-3.5 w-3.5" />
+          )}
+        </span>
+        <span className="leading-none">
+          {children ?? 'Continue with Google'}
+        </span>
+      </button>
+    );
+  },
+);
 GoogleButton.displayName = 'GoogleButton';
 
 function GoogleIcon({ className }: { className?: string }) {

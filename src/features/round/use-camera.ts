@@ -59,6 +59,14 @@ export function useCamera({
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => undefined);
+      } else {
+        // Video element not mounted yet — caller is responsible for retrying
+        // once the ref attaches; otherwise stop the stream to free the camera.
+        stream.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+        setStatus('error');
+        setError('Camera initialised before the video element was ready.');
+        return;
       }
       setStatus('granted');
     } catch (e) {

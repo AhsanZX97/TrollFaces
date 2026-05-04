@@ -89,7 +89,13 @@ export const useLeaderboardStore = create<LeaderboardState>()(
             playerId: player.id,
             playerName: player.displayName,
           });
-          set((s) => ({ results: [result, ...s.results] }));
+          // In remote mode the leaderboard is the source of truth — keeping
+          // a parallel local copy would grow localStorage forever and cause
+          // ghost duplicates if anyone ever falls back to local aggregation.
+          // We still keep the latest result around in memory (not persisted)
+          // so the immediate /results/:id navigation can read it without a
+          // round-trip; the remote fetch in ResultsPage covers reloads.
+          set({ results: [result] });
           return result;
         }
         const result: RoundResult = {
@@ -107,11 +113,21 @@ export const useLeaderboardStore = create<LeaderboardState>()(
     }),
     {
       name: 'trollfaces.leaderboard',
-      version: 1,
+      version: 2,
       partialize: (state) => ({
         player: state.player,
-        results: state.results,
+        // Only persist results in local-only mode — in remote mode the
+        // server is the source of truth and the in-memory cache is enough.
+        results: isRemoteLeaderboardEnabled() ? [] : state.results,
       }),
+      migrate: (persisted, version) => {
+        // v1 → v2: structure unchanged but bumped to clear stray legacy IDs.
+        if (!persisted || typeof persisted !== 'object') {
+          return { player: null, results: [] };
+        }
+        if (version < 2) return persisted;
+        return persisted;
+      },
     },
   ),
 );

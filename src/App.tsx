@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/components/layout/app-shell';
+import { ErrorBoundary } from '@/components/error-boundary';
+import { ThemeProvider } from '@/components/theme-provider';
 import { AuthSync } from '@/features/auth/auth-sync';
 import { HomePage } from '@/pages/home-page';
 import { PlayPage } from '@/pages/play-page';
@@ -8,15 +10,19 @@ import { LeaderboardPage } from '@/pages/leaderboard-page';
 
 export default function App() {
   return (
-    <AppShell>
-      <AuthSync />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/play" element={<PlayPage />} />
-        <Route path="/results/:roundId" element={<ResultsPage />} />
-        <Route path="/leaderboard" element={<LeaderboardPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </AppShell>
+    <ThemeProvider>
+      <ErrorBoundary>
+        <AppShell>
+          <AuthSync />
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/play" element={<PlayPage />} />
+            <Route path="/results/:roundId" element={<ResultsPage />} />
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AppShell>
+      </ErrorBoundary>
+    </ThemeProvider>
   );
 }

@@ -1,24 +1,43 @@
+import { cn } from '@/lib/utils';
+
 interface ReferenceFaceProps {
   size?: 'sm' | 'md' | 'lg';
+  caption?: string | null;
+  className?: string;
 }
 
 const sizes = {
-  sm: 'h-16 w-16',
-  md: 'h-32 w-32',
-  lg: 'h-48 w-48',
+  sm: { box: 'h-20 w-20', img: 'h-14 w-14' },
+  md: { box: 'h-36 w-36', img: 'h-28 w-28' },
+  lg: { box: 'h-52 w-52', img: 'h-40 w-40' },
 };
 
-export function ReferenceFace({ size = 'md' }: ReferenceFaceProps) {
+export function ReferenceFace({
+  size = 'md',
+  caption = 'Match this face',
+  className,
+}: ReferenceFaceProps) {
+  const s = sizes[size];
   return (
-    <figure className="flex flex-col items-center gap-2">
-      <img
-        src="/trollface.png"
-        alt="Reference troll face"
-        className={`${sizes[size]} rounded-2xl border bg-white object-contain p-2 shadow-sm`}
-      />
-      <figcaption className="text-xs text-muted-foreground">
-        Match this face
-      </figcaption>
+    <figure className={cn('flex flex-col items-center gap-2', className)}>
+      <div
+        className={cn(
+          'relative flex items-center justify-center border-2 border-ink bg-paper shadow-stamp',
+          s.box,
+        )}
+      >
+        <span className="absolute inset-1 halftone opacity-60" aria-hidden />
+        <img
+          src="/trollface.png"
+          alt="Reference troll face"
+          className={cn('relative object-contain', s.img)}
+        />
+      </div>
+      {caption ? (
+        <figcaption className="font-mono text-[10px] uppercase tracking-stamp text-muted-fg">
+          {caption}
+        </figcaption>
+      ) : null}
     </figure>
   );
 }

@@ -15,6 +15,7 @@ type LandmarkerStatus = 'idle' | 'loading' | 'ready' | 'error';
 interface UseFaceLandmarkerReturn {
   status: LandmarkerStatus;
   error: string | null;
+  isReady: () => boolean;
   detect: (
     video: HTMLVideoElement,
     timestampMs: number,
@@ -61,6 +62,10 @@ export function useFaceLandmarker(): UseFaceLandmarkerReturn {
     };
   }, []);
 
+  const isReady = useCallback(() => {
+    return landmarkerRef.current != null;
+  }, []);
+
   const detect = useCallback(
     (video: HTMLVideoElement, timestampMs: number) => {
       const lm = landmarkerRef.current;
@@ -74,5 +79,5 @@ export function useFaceLandmarker(): UseFaceLandmarkerReturn {
     [],
   );
 
-  return { status, error, detect };
+  return { status, error, isReady, detect };
 }

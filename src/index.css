@@ -4,44 +4,56 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --primary: 142 71% 45%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 142 71% 45%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 142 71% 45%;
-    --radius: 0.75rem;
+    /* Newsprint — Daily Edition (light) */
+    --paper: 38 45% 93%;            /* #F5EFE3 warm cream */
+    --ink: 0 0% 4%;                  /* near-black */
+    --muted-fg: 30 9% 38%;           /* warm grey */
+    --accent: 354 78% 56%;           /* ink red */
+    --accent-foreground: 38 45% 96%;
+
+    --background: var(--paper);
+    --foreground: var(--ink);
+    --card: 38 45% 96%;
+    --card-foreground: var(--ink);
+
+    --primary: var(--ink);
+    --primary-foreground: var(--paper);
+    --secondary: 38 30% 88%;
+    --secondary-foreground: var(--ink);
+    --muted: 38 30% 88%;
+    --muted-foreground: var(--muted-fg);
+    --destructive: 354 78% 50%;
+    --destructive-foreground: 38 45% 96%;
+    --border: 0 0% 4%;
+    --input: 0 0% 4%;
+    --ring: 354 78% 56%;
+    --radius: 0px;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 6% 8%;
-    --card-foreground: 0 0% 98%;
-    --primary: 142 71% 50%;
-    --primary-foreground: 240 10% 3.9%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 142 71% 50%;
-    --accent-foreground: 240 10% 3.9%;
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 142 71% 50%;
+    /* Midnight Edition (dark) */
+    --paper: 240 12% 8%;             /* #11131A */
+    --ink: 38 45% 92%;               /* warm off-white */
+    --muted-fg: 35 8% 60%;
+    --accent: 354 100% 64%;          /* hotter red on dark */
+    --accent-foreground: 240 12% 8%;
+
+    --background: 240 14% 6%;
+    --foreground: var(--ink);
+    --card: 240 12% 10%;
+    --card-foreground: var(--ink);
+
+    --primary: var(--ink);
+    --primary-foreground: var(--paper);
+    --secondary: 240 8% 16%;
+    --secondary-foreground: var(--ink);
+    --muted: 240 8% 14%;
+    --muted-foreground: var(--muted-fg);
+    --destructive: 354 90% 60%;
+    --destructive-foreground: 240 12% 8%;
+    --border: 38 25% 80%;
+    --input: 38 25% 80%;
+    --ring: 354 100% 64%;
   }
 }
 
@@ -49,33 +61,184 @@
   * {
     @apply border-border;
   }
+
   html,
   body,
   #root {
-    @apply h-full;
+    height: 100%;
   }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: 'rlig' 1, 'calt' 1;
-    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-      'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system,
+      'Segoe UI', Roboto, sans-serif;
+    font-feature-settings: 'rlig' 1, 'calt' 1, 'ss01' 1;
+    background-image:
+      /* halftone dots */
+      radial-gradient(
+        hsl(var(--ink) / 0.05) 1px,
+        transparent 1.6px
+      );
+    background-size: 6px 6px;
+  }
+
+  .dark body {
+    background-image: radial-gradient(
+      hsl(var(--ink) / 0.04) 1px,
+      transparent 1.6px
+    );
+    background-size: 6px 6px;
+  }
+
+  ::selection {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
   }
 }
 
-.troll-grid {
-  background-image:
-    radial-gradient(
-      circle at 20% 10%,
-      hsl(var(--primary) / 0.15),
-      transparent 40%
-    ),
-    radial-gradient(
-      circle at 90% 80%,
-      hsl(var(--primary) / 0.1),
-      transparent 50%
+@layer components {
+  .container {
+    width: 100%;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 768px) {
+    .container { padding-inline: 1.5rem; }
+  }
+  @media (min-width: 1024px) {
+    .container { padding-inline: 2rem; }
+  }
+  @media (min-width: 1280px) {
+    .container { max-width: 1280px; }
+  }
+
+  /* Tabloid masthead text-shadow + halftone fill */
+  .masthead {
+    font-family: 'Anton', Impact, sans-serif;
+    letter-spacing: -0.01em;
+    line-height: 0.85;
+    text-transform: uppercase;
+  }
+
+  /* Hard-stamp box: thick ink border + offset shadow */
+  .ink-box {
+    border: 2px solid hsl(var(--ink));
+    box-shadow: 4px 4px 0 0 hsl(var(--ink));
+    background: hsl(var(--card));
+    transition:
+      transform 120ms cubic-bezier(.2,.7,.2,1),
+      box-shadow 120ms cubic-bezier(.2,.7,.2,1);
+  }
+
+  .ink-box-pressable:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 0 hsl(var(--ink));
+  }
+  .ink-box-pressable:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 0 hsl(var(--ink));
+  }
+
+  .accent-box {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+    border: 2px solid hsl(var(--ink));
+    box-shadow: 4px 4px 0 0 hsl(var(--ink));
+  }
+
+  /* Halftone background (used behind reference face etc.) */
+  .halftone {
+    background-image: radial-gradient(
+      hsl(var(--ink) / 0.18) 1.2px,
+      transparent 1.6px
     );
+    background-size: 5px 5px;
+  }
+
+  /* Vertical rule with three asterisks */
+  .rule-asterisks::before,
+  .rule-asterisks::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid hsl(var(--ink) / 0.45);
+  }
+
+  /* Mirror video for natural selfie behavior */
+  .mirror-x {
+    transform: scaleX(-1);
+  }
+
+  /* Camera scan-line overlay used during a running round */
+  .scanlines::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        hsl(var(--ink) / 0.0) 0px,
+        hsl(var(--ink) / 0.0) 3px,
+        hsl(var(--ink) / 0.08) 3px,
+        hsl(var(--ink) / 0.08) 4px
+      );
+    pointer-events: none;
+    mix-blend-mode: multiply;
+  }
+
+  .dark .scanlines::before {
+    mix-blend-mode: lighten;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        hsl(var(--ink) / 0.0) 0px,
+        hsl(var(--ink) / 0.0) 3px,
+        hsl(var(--ink) / 0.06) 3px,
+        hsl(var(--ink) / 0.06) 4px
+      );
+  }
+
+  /* Legacy class kept so we don't break older overlays */
+  .troll-grid {
+    background-image:
+      radial-gradient(
+        circle at 20% 10%,
+        hsl(var(--accent) / 0.08),
+        transparent 40%
+      ),
+      radial-gradient(
+        circle at 90% 80%,
+        hsl(var(--accent) / 0.05),
+        transparent 50%
+      );
+  }
 }
 
-.mirror-x {
-  transform: scaleX(-1);
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
+
+  /* Tabular figures everywhere we show numbers */
+  .tabular { font-variant-numeric: tabular-nums; }
+}
+
+/* Reduced motion: kill non-essential animation */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+  .animate-marquee,
+  .animate-marquee-fast,
+  .animate-scan,
+  .animate-pulse-ink {
+    animation: none !important;
+  }
 }

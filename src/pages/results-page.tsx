@@ -3,8 +3,9 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Loader2, Repeat, Trophy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { RuleLine } from '@/components/ui/rule-line';
+import { StampedNumber } from '@/components/ui/stamped-number';
 import type { LeaderboardEntry } from '@/features/leaderboard/types';
 import {
   buildLeaderboard,
@@ -17,6 +18,7 @@ import {
 import { isRemoteLeaderboardEnabled } from '@/lib/env';
 import type { RoundResult } from '@/features/round/types';
 import { ReferenceFace } from '@/features/round/reference-face';
+import { cn } from '@/lib/utils';
 
 export function ResultsPage() {
   const { roundId } = useParams<{ roundId: string }>();
@@ -33,11 +35,21 @@ export function ResultsPage() {
 
   useEffect(() => {
     if (!roundId || storeResult || !remoteEnabled) return;
+    let cancelled = false;
     setFetchingRemote(true);
     fetchRoundResultRemote(roundId)
-      .then(setRemoteResult)
-      .catch(() => setRemoteResult(null))
-      .finally(() => setFetchingRemote(false));
+      .then((data) => {
+        if (!cancelled) setRemoteResult(data);
+      })
+      .catch(() => {
+        if (!cancelled) setRemoteResult(null);
+      })
+      .finally(() => {
+        if (!cancelled) setFetchingRemote(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [roundId, storeResult, remoteEnabled]);
 
   const result = storeResult ?? remoteResult;
@@ -52,9 +64,17 @@ export function ResultsPage() {
       setRemoteBoard(null);
       return;
     }
+    let cancelled = false;
     fetchLeaderboardRemote()
-      .then(setRemoteBoard)
-      .catch(() => setRemoteBoard(null));
+      .then((data) => {
+        if (!cancelled) setRemoteBoard(data);
+      })
+      .catch(() => {
+        if (!cancelled) setRemoteBoard([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [player, result, remoteEnabled]);
 
   const rank = useMemo(() => {
@@ -72,17 +92,20 @@ export function ResultsPage() {
   if (fetchingRemote) {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-4 py-16 text-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Loading round…</p>
+        <Loader2 className="h-8 w-8 animate-spin text-muted-fg" />
+        <p className="font-mono text-[10px] uppercase tracking-stamp text-muted-fg">
+          Loading round…
+        </p>
       </div>
     );
   }
 
   if (!result) {
     return (
-      <div className="mx-auto max-w-md text-center">
-        <p className="mb-4 text-muted-foreground">
-          That round was not found.
+      <div className="mx-auto flex max-w-md flex-col items-center gap-4 text-center">
+        <span className="font-display text-6xl uppercase">404</span>
+        <p className="font-mono text-[10px] uppercase tracking-stamp text-muted-fg">
+          That round was not found
         </p>
         <Button onClick={() => navigate('/')}>Back to home</Button>
       </div>
@@ -91,83 +114,88 @@ export function ResultsPage() {
 
   const isZero = result.score === 0;
   const isNoFace = result.detectionRate === 0;
+  const headline = isNoFace
+    ? 'No Face Found'
+    : isZero
+    ? 'Detection Too Low'
+    : verdictForScore(result.score);
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      <header className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight">
-          {isNoFace
-            ? 'No face detected'
-            : isZero
-            ? 'Detection too low'
-            : 'Round complete'}
+    <div className="mx-auto flex max-w-3xl flex-col gap-8">
+      <header className="flex flex-col items-center gap-3 text-center">
+        <span className="font-mono text-[10px] uppercase tracking-stamp text-muted-fg">
+          Round Complete · {result.playerName}
+        </span>
+        <h1 className="masthead text-5xl text-balance sm:text-7xl">
+          {headline}
         </h1>
-        <p className="text-sm text-muted-foreground">
-          Nice try, {result.playerName}.
-        </p>
+        <RuleLine label="The verdict" />
       </header>
 
-      <Card>
-        <CardContent className="flex flex-col items-center gap-6 p-8">
-          <ReferenceFace size="md" />
+      <div className="ink-box flex flex-col items-center gap-8 p-6 sm:p-10">
+        <ReferenceFace size="md" caption="Versus the reference" />
 
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">
-              Similarity score
+        <StampedNumber
+          value={result.score}
+          label="Similarity Score · / 100"
+          tone={isZero ? 'ink' : 'accent'}
+        />
+
+        <div className="grid w-full grid-cols-2 gap-3 sm:gap-4">
+          <Stat
+            label="Points Earned"
+            value={`+${result.pointsAwarded}`}
+            tone="accent"
+          />
+          <Stat
+            label="Face Detected"
+            value={`${Math.round(result.detectionRate * 100)}%`}
+            tone={result.detectionRate >= 0.7 ? 'success' : 'warning'}
+          />
+        </div>
+
+        <div className="flex w-full flex-col gap-2">
+          <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-stamp text-muted-fg">
+            <span>Detection across the round</span>
+            <span className="tabular">
+              {result.meta.framesWithFace}/{result.meta.framesSampled} frames
             </span>
-            <span className="font-mono text-7xl font-bold tabular-nums">
-              {result.score}
-            </span>
-            <span className="text-sm text-muted-foreground">/ 100</span>
           </div>
+          <Progress value={result.detectionRate * 100} tone="ink" />
+        </div>
 
-          <div className="grid w-full grid-cols-2 gap-3 text-sm">
-            <Stat
-              label="Points earned"
-              value={`+${result.pointsAwarded}`}
-              tone="primary"
-            />
-            <Stat
-              label="Face detected"
-              value={`${Math.round(result.detectionRate * 100)}%`}
-              tone={result.detectionRate >= 0.7 ? 'success' : 'warning'}
-            />
-          </div>
-
-          <div className="flex w-full flex-col gap-2">
-            <div className="flex items-baseline justify-between text-xs text-muted-foreground">
-              <span>Detection across the round</span>
-              <span>
-                {result.meta.framesWithFace}/{result.meta.framesSampled} frames
-              </span>
-            </div>
-            <Progress value={result.detectionRate * 100} />
-          </div>
-
-          {rank ? (
-            <Badge variant="default">
-              <Trophy className="mr-1 h-3 w-3" /> Rank #{rank}
-            </Badge>
-          ) : null}
-        </CardContent>
-      </Card>
+        {rank ? (
+          <Badge variant="accent" className="text-[11px]">
+            <Trophy className="h-3 w-3" /> Rank #{rank}
+          </Badge>
+        ) : null}
+      </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <Button
           size="lg"
+          variant="accent"
           className="flex-1"
           onClick={() => navigate('/play')}
         >
-          <Repeat className="mr-1 h-4 w-4" /> Play again
+          <Repeat className="h-4 w-4" /> Play again
         </Button>
         <Button asChild size="lg" variant="outline" className="flex-1">
           <Link to="/leaderboard">
-            <Trophy className="mr-1 h-4 w-4" /> Leaderboard
+            <Trophy className="h-4 w-4" /> Leaderboard
           </Link>
         </Button>
       </div>
     </div>
   );
+}
+
+function verdictForScore(score: number): string {
+  if (score >= 90) return 'The Troll Lives';
+  if (score >= 75) return 'Certified Troll';
+  if (score >= 55) return 'Solid Grin';
+  if (score >= 35) return 'Needs More Smirk';
+  return 'Try Harder';
 }
 
 function Stat({
@@ -177,18 +205,22 @@ function Stat({
 }: {
   label: string;
   value: string;
-  tone: 'primary' | 'success' | 'warning';
+  tone: 'accent' | 'success' | 'warning';
 }) {
   const toneClass =
     tone === 'success'
-      ? 'text-emerald-500'
+      ? 'bg-emerald-500 text-ink'
       : tone === 'warning'
-      ? 'text-amber-500'
-      : 'text-primary';
+      ? 'bg-amber-300 text-ink'
+      : 'bg-accent text-accent-foreground';
   return (
-    <div className="rounded-lg border bg-muted/40 p-3 text-center">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={`text-xl font-semibold ${toneClass}`}>{value}</div>
+    <div className={cn('border-2 border-ink p-3 sm:p-4', toneClass)}>
+      <div className="font-mono text-[10px] uppercase tracking-stamp opacity-80">
+        {label}
+      </div>
+      <div className="font-display text-3xl leading-none tabular sm:text-4xl">
+        {value}
+      </div>
     </div>
   );
 }

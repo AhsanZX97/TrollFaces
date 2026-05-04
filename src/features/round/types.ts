@@ -15,14 +15,11 @@ export interface FrameSample {
 }
 
 export type RoundPhase =
-  | 'idle'
   | 'permission'
   | 'ready'
   | 'countdown'
   | 'running'
-  | 'scoring'
-  | 'done'
-  | 'error';
+  | 'scoring';
 
 export interface RoundResult {
   id: string;

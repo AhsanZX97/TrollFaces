@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Play, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { RuleLine } from '@/components/ui/rule-line';
 import { CameraPreview } from '@/features/round/camera-preview';
 import { FaceStatus } from '@/features/round/face-status';
 import { ReferenceFace } from '@/features/round/reference-face';
@@ -17,6 +17,7 @@ import {
 } from '@/features/round/scoring';
 import type { FrameSample, RoundPhase } from '@/features/round/types';
 import { useLeaderboardStore } from '@/features/leaderboard/use-leaderboard-store';
+import { cn } from '@/lib/utils';
 
 const ROUND_SECONDS = 10;
 const COUNTDOWN_SECONDS = 3;
@@ -55,7 +56,14 @@ export function PlayPage() {
     if (!video) return;
     const ts = performance.now();
     const result = landmarker.detect(video, ts);
-    const lm = result?.faceLandmarks?.[0];
+
+    // Distinguish "model wasn't ready / video frame not ready" (null result)
+    // from "model ran but found no face." Only the latter counts against
+    // detection rate; the former is silently skipped so the 0.7 threshold
+    // doesn't punish players for warmup time.
+    if (result == null) return;
+
+    const lm = result.faceLandmarks?.[0];
     if (!lm || lm.length === 0) {
       samplesRef.current.push({ timestamp: ts, detected: false, features: null });
       setFaceDetected(false);
@@ -166,94 +174,180 @@ export function PlayPage() {
   );
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Hi {player?.displayName} —
+    <div className="mx-auto flex max-w-6xl flex-col gap-8">
+      {/* Header strip */}
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-2">
+          <span className="font-mono text-[10px] uppercase tracking-stamp text-muted-fg">
+            Round in progress · One take only
+          </span>
+          <h1 className="font-display text-4xl uppercase leading-none sm:text-5xl">
+            Hi, {player?.displayName}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Match the troll face. You have {ROUND_SECONDS} seconds.
+          <p className="text-sm text-muted-fg">
+            Match the troll face. You have{' '}
+            <span className="font-mono font-bold text-ink">
+              {ROUND_SECONDS}s
+            </span>
+            .
           </p>
         </div>
-        <ReferenceFace size="sm" />
-      </div>
+        <ReferenceFace size="sm" caption={null} />
+      </header>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr,1fr]">
+      <RuleLine glyph="●●●" />
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.7fr,1fr]">
         <CameraPreview
           videoRef={camera.videoRef}
-          overlay={<RoundOverlay phase={phase} countdown={countdown} />}
+          showScanlines={phase === 'running'}
+          overlay={
+            <RoundOverlay
+              phase={phase}
+              countdown={countdown}
+              timerPct={timerPct}
+              remaining={timer.remaining}
+            />
+          }
         />
 
-        <Card>
-          <CardContent className="flex flex-col gap-4 p-6">
-            <FaceStatus
-              detected={faceDetected && phase === 'running'}
-              hint={phase === 'running' ? hint : null}
-            />
+        <aside className="ink-box flex flex-col gap-5 p-5 sm:p-6">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[10px] uppercase tracking-stamp text-muted-fg">
+              Vitals
+            </span>
+            <PhaseBadge phase={phase} />
+          </div>
 
-            <div className="flex flex-col gap-2">
-              <div className="flex items-baseline justify-between">
-                <span className="text-sm font-medium">Time left</span>
-                <span className="font-mono text-xl tabular-nums">
-                  {phase === 'running'
-                    ? timer.remaining.toFixed(1)
-                    : phase === 'scoring'
-                    ? '0.0'
-                    : ROUND_SECONDS.toFixed(1)}
-                  s
-                </span>
-              </div>
-              <Progress
-                value={phase === 'running' ? timerPct : phase === 'scoring' ? 100 : 0}
-              />
+          <FaceStatus
+            detected={faceDetected && phase === 'running'}
+            hint={phase === 'running' ? hint : null}
+          />
+
+          <div className="flex flex-col gap-2">
+            <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-stamp text-muted-fg">
+              <span>Time left</span>
+              <span className="tabular text-2xl font-bold normal-case tracking-normal text-ink">
+                {phase === 'running'
+                  ? timer.remaining.toFixed(1)
+                  : phase === 'scoring'
+                  ? '0.0'
+                  : ROUND_SECONDS.toFixed(1)}
+                s
+              </span>
             </div>
-
-            <PhaseControls
-              phase={phase}
-              cameraStatus={camera.status}
-              cameraError={camera.error}
-              landmarkerStatus={landmarker.status}
-              landmarkerError={landmarker.error}
-              onRequestCamera={handleRequestCamera}
-              onStart={handleStartRound}
+            <Progress
+              value={
+                phase === 'running'
+                  ? timerPct
+                  : phase === 'scoring'
+                  ? 100
+                  : 0
+              }
+              tone="accent"
             />
-            {saveError ? (
-              <p
-                role="alert"
-                className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
-              >
-                {saveError}
-              </p>
-            ) : null}
-          </CardContent>
-        </Card>
+          </div>
+
+          <PhaseControls
+            phase={phase}
+            cameraStatus={camera.status}
+            cameraError={camera.error}
+            landmarkerStatus={landmarker.status}
+            landmarkerError={landmarker.error}
+            onRequestCamera={handleRequestCamera}
+            onStart={handleStartRound}
+          />
+
+          {saveError ? (
+            <p
+              role="alert"
+              className="border-2 border-destructive bg-destructive/10 p-3 font-mono text-[11px] text-destructive"
+            >
+              {saveError}
+            </p>
+          ) : null}
+        </aside>
       </div>
     </div>
+  );
+}
+
+function PhaseBadge({ phase }: { phase: RoundPhase }) {
+  const map: Record<RoundPhase, { label: string; tone: string }> = {
+    permission: { label: 'Permission', tone: 'bg-paper text-ink' },
+    ready: { label: 'Ready', tone: 'bg-paper text-ink' },
+    countdown: { label: 'Countdown', tone: 'bg-accent text-accent-foreground' },
+    running: {
+      label: 'Live',
+      tone: 'bg-accent text-accent-foreground animate-pulse-ink',
+    },
+    scoring: { label: 'Scoring', tone: 'bg-ink text-paper' },
+  };
+  const v = map[phase];
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 border-2 border-ink px-2.5 py-1 font-mono text-[10px] uppercase tracking-stamp',
+        v.tone,
+      )}
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {v.label}
+    </span>
   );
 }
 
 function RoundOverlay({
   phase,
   countdown,
+  timerPct,
+  remaining,
 }: {
   phase: RoundPhase;
   countdown: number;
+  timerPct: number;
+  remaining: number;
 }) {
   if (phase === 'countdown') {
     return (
-      <div className="absolute inset-0 flex items-center justify-center bg-black/30 text-white">
-        <span className="text-8xl font-bold tabular-nums drop-shadow-lg">
+      <div className="absolute inset-0 flex items-center justify-center bg-ink/40">
+        <span
+          key={countdown}
+          className="font-display text-[160px] leading-none text-paper animate-stamp-in"
+          style={{ textShadow: '0 6px 0 hsl(var(--ink))' }}
+        >
           {countdown}
         </span>
       </div>
     );
   }
+  if (phase === 'running') {
+    return (
+      <>
+        {/* Scan bar */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-[3px] origin-left bg-accent"
+          style={{ width: `${timerPct}%`, transition: 'width 100ms linear' }}
+        />
+        {/* Live timer chip */}
+        <div className="absolute left-3 top-3 inline-flex items-center gap-2 border-2 border-paper bg-ink/80 px-2.5 py-1 font-mono text-[10px] uppercase tracking-stamp text-paper">
+          <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse-ink" />
+          LIVE · {remaining.toFixed(1)}s
+        </div>
+      </>
+    );
+  }
   if (phase === 'scoring') {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 text-white">
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-ink/60 text-paper">
         <Sparkles className="h-8 w-8 animate-pulse" />
-        <span className="text-xl font-semibold">Scanning…</span>
+        <span className="font-display text-3xl uppercase tracking-tight">
+          Scanning
+        </span>
+        <span className="font-mono text-[10px] uppercase tracking-stamp opacity-80">
+          Computing similarity…
+        </span>
       </div>
     );
   }
@@ -282,11 +376,11 @@ function PhaseControls({
   if (phase === 'permission') {
     if (cameraStatus === 'denied' || cameraStatus === 'error') {
       return (
-        <div className="flex flex-col gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
-          <p className="font-medium text-destructive">
+        <div className="flex flex-col gap-2 border-2 border-destructive bg-destructive/10 p-3">
+          <p className="font-mono text-[10px] uppercase tracking-stamp text-destructive">
             Camera unavailable
           </p>
-          <p className="text-destructive/80">{cameraError}</p>
+          <p className="text-sm text-destructive">{cameraError}</p>
           <Button variant="outline" onClick={onRequestCamera}>
             Try again
           </Button>
@@ -297,27 +391,28 @@ function PhaseControls({
       <div className="flex flex-col gap-2">
         <Button
           size="lg"
+          variant="accent"
           onClick={onRequestCamera}
           disabled={cameraStatus === 'requesting'}
         >
           {cameraStatus === 'requesting' ? (
             <>
-              <Loader2 className="mr-1 h-4 w-4 animate-spin" /> Requesting…
+              <Loader2 className="h-4 w-4 animate-spin" /> Requesting…
             </>
           ) : (
             'Allow camera'
           )}
         </Button>
-        <p className="text-xs text-muted-foreground">
+        <p className="font-mono text-[10px] uppercase tracking-stamp text-muted-fg">
           Frames are processed only on your device.
         </p>
         {landmarkerStatus === 'loading' && (
-          <p className="text-xs text-muted-foreground">
+          <p className="font-mono text-[10px] uppercase tracking-stamp text-muted-fg">
             Loading face model…
           </p>
         )}
         {landmarkerStatus === 'error' && (
-          <p className="text-xs text-destructive">
+          <p className="font-mono text-[10px] uppercase tracking-stamp text-destructive">
             Face model failed: {landmarkerError}
           </p>
         )}
@@ -327,8 +422,8 @@ function PhaseControls({
 
   if (phase === 'ready') {
     return (
-      <Button size="lg" onClick={onStart}>
-        <Play className="mr-1 h-4 w-4" /> Start 10s round
+      <Button size="lg" variant="accent" onClick={onStart}>
+        <Play className="h-4 w-4" /> Start 10s round
       </Button>
     );
   }
@@ -343,15 +438,15 @@ function PhaseControls({
 
   if (phase === 'running') {
     return (
-      <Button size="lg" disabled className="cursor-not-allowed">
-        <Sparkles className="mr-1 h-4 w-4" /> Show that face!
+      <Button size="lg" variant="accent" disabled>
+        <Sparkles className="h-4 w-4" /> Show that face!
       </Button>
     );
   }
 
   return (
     <Button size="lg" disabled>
-      <Loader2 className="mr-1 h-4 w-4 animate-spin" /> Scoring…
+      <Loader2 className="h-4 w-4 animate-spin" /> Scoring…
     </Button>
   );
 }
