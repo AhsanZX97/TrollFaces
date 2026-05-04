@@ -1,5 +1,14 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildLeaderboard, useLeaderboardStore } from './use-leaderboard-store';
+
+// Force the local-only path; otherwise tests will try to hit a real Supabase
+// project picked up from the developer's .env file.
+vi.stubEnv('VITE_SUPABASE_URL', '');
+vi.stubEnv('VITE_SUPABASE_ANON_KEY', '');
+
+afterAll(() => {
+  vi.unstubAllEnvs();
+});
 
 describe('useLeaderboardStore', () => {
   beforeEach(() => {

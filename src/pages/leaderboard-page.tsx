@@ -122,12 +122,6 @@ export function LeaderboardPage() {
           )}
         </CardContent>
       </Card>
-
-      <p className="text-center text-xs text-muted-foreground">
-        {remoteEnabled
-          ? 'Leaderboard data is stored in Supabase (shared across all players).'
-          : 'Scores are stored only in this browser until you add Supabase (see docs/supabase.md).'}
-      </p>
     </div>
   );
 }

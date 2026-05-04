@@ -1,18 +1,26 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, Smile, Trophy } from 'lucide-react';
+import { Camera, Loader2, LogOut, Smile, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { GoogleButton } from '@/features/auth/google-button';
+import { displayNameForUser, useAuth } from '@/features/auth/use-auth';
 import { useLeaderboardStore } from '@/features/leaderboard/use-leaderboard-store';
+import { isRemoteLeaderboardEnabled } from '@/lib/env';
 
 const MAX_NAME = 20;
 
 export function HomePage() {
   const navigate = useNavigate();
-  const existingPlayer = useLeaderboardStore((s) => s.player);
+  const remoteEnabled = isRemoteLeaderboardEnabled();
+  const auth = useAuth();
   const setPlayer = useLeaderboardStore((s) => s.setPlayer);
-  const [name, setName] = useState(existingPlayer?.displayName ?? '');
+  const player = useLeaderboardStore((s) => s.player);
+
+  const initialName =
+    auth.status === 'signed-in' ? '' : player?.displayName ?? '';
+  const [name, setName] = useState(initialName);
 
   const trimmed = name.trim();
   const isValid = useMemo(
@@ -25,6 +33,14 @@ export function HomePage() {
     if (!isValid) return;
     setPlayer(trimmed);
     navigate('/play');
+  };
+
+  const onSignIn = async () => {
+    try {
+      await auth.signInWithGoogle();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -46,52 +62,79 @@ export function HomePage() {
 
       <Card>
         <CardContent className="p-6">
-          <form onSubmit={onSubmit} className="flex flex-col gap-3">
-            <label
-              htmlFor="display-name"
-              className="text-sm font-medium text-muted-foreground"
-            >
-              Your display name
-            </label>
-            <div className="flex flex-col gap-1">
-              <Input
-                id="display-name"
-                value={name}
-                maxLength={MAX_NAME}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. troll_lord"
-                aria-describedby="display-name-counter"
-                autoFocus
-              />
-              <div
-                id="display-name-counter"
-                className="text-right text-xs text-muted-foreground"
-              >
-                {trimmed.length}/{MAX_NAME}
+          {auth.status === 'loading' ? (
+            <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading…
+            </div>
+          ) : auth.status === 'signed-in' ? (
+            <SignedInEntry
+              displayName={displayNameForUser(auth.user)}
+              onPlay={() => navigate('/play')}
+              onLeaderboard={() => navigate('/leaderboard')}
+              onSignOut={() => auth.signOut()}
+            />
+          ) : (
+            <form onSubmit={onSubmit} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="display-name"
+                  className="text-sm font-medium text-muted-foreground"
+                >
+                  Display name
+                </label>
+                <Input
+                  id="display-name"
+                  value={name}
+                  maxLength={MAX_NAME}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. troll_lord"
+                  aria-describedby="display-name-counter"
+                  autoFocus
+                />
+                <div
+                  id="display-name-counter"
+                  className="text-right text-xs text-muted-foreground"
+                >
+                  {trimmed.length}/{MAX_NAME}
+                </div>
               </div>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button
-                type="submit"
-                size="lg"
-                className="flex-1"
-                disabled={!isValid}
-              >
-                {isValid ? 'Start round' : 'Enter a name to play'}
-              </Button>
-              <Button
-                type="button"
-                size="lg"
-                variant="outline"
-                onClick={() => navigate('/leaderboard')}
-              >
-                <Trophy className="mr-1 h-4 w-4" /> Leaderboard
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Sign-in coming later. Scores are saved to this browser for now.
-            </p>
-          </form>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="flex-1"
+                  disabled={!isValid}
+                >
+                  {isValid ? 'Start round' : 'Enter a name to play'}
+                </Button>
+                <Button
+                  type="button"
+                  size="lg"
+                  variant="outline"
+                  onClick={() => navigate('/leaderboard')}
+                >
+                  <Trophy className="mr-1 h-4 w-4" /> Leaderboard
+                </Button>
+              </div>
+
+              {remoteEnabled ? (
+                <>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="h-px flex-1 bg-border" />
+                    or
+                    <span className="h-px flex-1 bg-border" />
+                  </div>
+                  <GoogleButton
+                    type="button"
+                    size="lg"
+                    onClick={onSignIn}
+                  />
+                </>
+              ) : null}
+            </form>
+          )}
         </CardContent>
       </Card>
 
@@ -120,6 +163,49 @@ export function HomePage() {
           />
         </div>
       </section>
+    </div>
+  );
+}
+
+interface SignedInEntryProps {
+  displayName: string;
+  onPlay: () => void;
+  onLeaderboard: () => void;
+  onSignOut: () => void;
+}
+
+function SignedInEntry({
+  displayName,
+  onPlay,
+  onLeaderboard,
+  onSignOut,
+}: SignedInEntryProps) {
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="text-sm text-muted-foreground">
+        Signed in as{' '}
+        <span className="font-semibold text-foreground">{displayName}</span>
+      </p>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Button type="button" size="lg" className="flex-1" onClick={onPlay}>
+          Start round
+        </Button>
+        <Button
+          type="button"
+          size="lg"
+          variant="outline"
+          onClick={onLeaderboard}
+        >
+          <Trophy className="mr-1 h-4 w-4" /> Leaderboard
+        </Button>
+      </div>
+      <button
+        type="button"
+        onClick={onSignOut}
+        className="self-start text-xs text-muted-foreground underline-offset-4 hover:underline"
+      >
+        <LogOut className="mr-1 inline h-3 w-3" /> Sign out
+      </button>
     </div>
   );
 }

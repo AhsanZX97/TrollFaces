@@ -16,6 +16,8 @@ interface LeaderboardState {
   player: Player | null;
   results: RoundResult[];
   setPlayer: (displayName: string) => Player;
+  setPlayerFromAuth: (input: { id: string; displayName: string }) => Player;
+  clearPlayer: () => void;
   addResult: (
     result: Omit<RoundResult, 'id' | 'createdAt' | 'playerId' | 'playerName'>,
   ) => Promise<RoundResult>;
@@ -51,6 +53,25 @@ export const useLeaderboardStore = create<LeaderboardState>()(
         set({ player });
         return player;
       },
+      setPlayerFromAuth: ({ id, displayName }) => {
+        const trimmed = displayName.trim() || 'Player';
+        const existing = get().player;
+        if (
+          existing &&
+          existing.id === id &&
+          existing.displayName === trimmed
+        ) {
+          return existing;
+        }
+        const player: Player = {
+          id,
+          displayName: trimmed,
+          createdAt: existing?.id === id ? existing.createdAt : Date.now(),
+        };
+        set({ player });
+        return player;
+      },
+      clearPlayer: () => set({ player: null }),
       addResult: async (partial) => {
         const player = get().player;
         if (!player) {
@@ -59,7 +80,9 @@ export const useLeaderboardStore = create<LeaderboardState>()(
         if (isRemoteLeaderboardEnabled()) {
           const sb = getSupabase();
           if (!sb) {
-            throw new Error('Supabase is enabled in env but client failed to init');
+            throw new Error(
+              'Supabase is enabled in env but client failed to init',
+            );
           }
           const result = await insertRoundResultRemote(sb, {
             ...partial,
