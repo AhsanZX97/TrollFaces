@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { RoundResult } from '@/features/round/types';
 import type { LeaderboardEntry } from '@/features/leaderboard/types';
 import { getSupabase } from '@/lib/supabase';
+import { startOfTodayIso } from '@/lib/time';
 
 interface RoundResultRow {
   id: string;
@@ -84,6 +85,24 @@ export async function fetchRoundResultRemote(
   if (error) throw new Error(error.message);
   if (!data) return null;
   return rowToRoundResult(data as RoundResultRow);
+}
+
+/**
+ * Fetch every round logged since local midnight today.
+ * Today's leaderboard is aggregated client-side via `buildLeaderboard`
+ * since the volume per day is small.
+ */
+export async function fetchTodayResultsRemote(): Promise<RoundResult[]> {
+  const sb = getSupabase();
+  if (!sb) return [];
+  const { data, error } = await sb
+    .from('round_results')
+    .select('*')
+    .gte('created_at', startOfTodayIso())
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  if (!data?.length) return [];
+  return (data as RoundResultRow[]).map(rowToRoundResult);
 }
 
 export async function fetchLeaderboardRemote(): Promise<LeaderboardEntry[]> {

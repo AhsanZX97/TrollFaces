@@ -110,7 +110,7 @@ export function AppShell({ children }: AppShellProps) {
             © {today.getFullYear()} TrollFaces · Printed Daily
           </span>
           <span className="font-mono">
-            Camera processed on-device · Score + name only leaves the browser
+            We are watching you
           </span>
         </div>
       </footer>

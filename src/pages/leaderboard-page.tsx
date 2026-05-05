@@ -4,8 +4,12 @@ import { Crown, Loader2, Play, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RuleLine } from '@/components/ui/rule-line';
 import { cn } from '@/lib/utils';
-import { fetchLeaderboardRemote } from '@/features/leaderboard/supabase-leaderboard';
+import {
+  fetchLeaderboardRemote,
+  fetchTodayResultsRemote,
+} from '@/features/leaderboard/supabase-leaderboard';
 import { isRemoteLeaderboardEnabled } from '@/lib/env';
+import { startOfTodayMs } from '@/lib/time';
 import type { LeaderboardEntry } from '@/features/leaderboard/types';
 import {
   buildLeaderboard,
@@ -23,13 +27,43 @@ function tierFor(bestScore: number) {
   return TIERS.find((t) => bestScore >= t.min) ?? TIERS[TIERS.length - 1];
 }
 
+type TabId = 'today' | 'all';
+
+const TAB_META: Record<
+  TabId,
+  { label: string; heading: string; subtitle: string; rule: string }
+> = {
+  today: {
+    label: 'Today',
+    heading: 'Top Troll of the Day',
+    subtitle:
+      "Today's rounds only · resets at midnight · best score breaks ties.",
+    rule: 'Daily Standings',
+  },
+  all: {
+    label: 'All Time',
+    heading: 'Hall of Trolls',
+    subtitle:
+      'Ranked by total points · best score breaks ties · earliest wins.',
+    rule: 'Standings',
+  },
+};
+
 export function LeaderboardPage() {
   const results = useLeaderboardStore((s) => s.results);
   const player = useLeaderboardStore((s) => s.player);
   const remoteEnabled = isRemoteLeaderboardEnabled();
 
-  const localBoard = useMemo(() => buildLeaderboard(results), [results]);
-  const [remoteBoard, setRemoteBoard] = useState<LeaderboardEntry[] | null>(
+  const [tab, setTab] = useState<TabId>('today');
+
+  const localBoardAll = useMemo(() => buildLeaderboard(results), [results]);
+  const localBoardToday = useMemo(() => {
+    const since = startOfTodayMs();
+    return buildLeaderboard(results.filter((r) => r.createdAt >= since));
+  }, [results]);
+
+  const [remoteAll, setRemoteAll] = useState<LeaderboardEntry[] | null>(null);
+  const [remoteToday, setRemoteToday] = useState<LeaderboardEntry[] | null>(
     null,
   );
   const [remoteLoading, setRemoteLoading] = useState(false);
@@ -37,21 +71,24 @@ export function LeaderboardPage() {
 
   useEffect(() => {
     if (!remoteEnabled) {
-      setRemoteBoard(null);
+      setRemoteAll(null);
+      setRemoteToday(null);
       setRemoteError(null);
       return;
     }
     let cancelled = false;
     setRemoteLoading(true);
     setRemoteError(null);
-    fetchLeaderboardRemote()
-      .then((data) => {
+    Promise.all([fetchLeaderboardRemote(), fetchTodayResultsRemote()])
+      .then(([all, todayRows]) => {
         if (cancelled) return;
-        setRemoteBoard(data);
+        setRemoteAll(all);
+        setRemoteToday(buildLeaderboard(todayRows));
       })
       .catch((e: unknown) => {
         if (cancelled) return;
-        setRemoteBoard([]);
+        setRemoteAll([]);
+        setRemoteToday([]);
         setRemoteError(
           e instanceof Error ? e.message : 'Could not reach the leaderboard.',
         );
@@ -64,12 +101,18 @@ export function LeaderboardPage() {
     };
   }, [remoteEnabled]);
 
-  const board = useMemo(
-    () => (remoteEnabled ? remoteBoard ?? [] : localBoard),
-    [remoteEnabled, remoteBoard, localBoard],
-  );
+  const board = useMemo(() => {
+    if (remoteEnabled) {
+      const remote = tab === 'today' ? remoteToday : remoteAll;
+      return remote ?? [];
+    }
+    return tab === 'today' ? localBoardToday : localBoardAll;
+  }, [remoteEnabled, tab, remoteToday, remoteAll, localBoardToday, localBoardAll]);
+
   const showRemoteSpinner =
-    remoteEnabled && remoteLoading && remoteBoard === null;
+    remoteEnabled &&
+    remoteLoading &&
+    (tab === 'today' ? remoteToday === null : remoteAll === null);
 
   const myRank = useMemo(() => {
     if (!player) return null;
@@ -77,18 +120,24 @@ export function LeaderboardPage() {
     return idx === -1 ? null : idx + 1;
   }, [board, player]);
 
+  const meta = TAB_META[tab];
+
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-8">
       <header className="flex flex-col items-center gap-3 text-center">
         <span className="font-mono text-[10px] uppercase tracking-stamp text-muted-fg">
           {remoteEnabled ? 'Global · Live' : 'This Browser Only'}
         </span>
-        <h1 className="masthead text-5xl sm:text-7xl">Hall of Trolls</h1>
+        <h1 className="masthead text-5xl sm:text-7xl">{meta.heading}</h1>
         <p className="max-w-md text-pretty font-mono text-[11px] uppercase tracking-stamp text-muted-fg">
-          Ranked by total points · best score breaks ties · earliest wins.
+          {meta.subtitle}
         </p>
-        <RuleLine label="Standings" />
+        <RuleLine label={meta.rule} />
       </header>
+
+      <div className="flex justify-center">
+        <Tabs value={tab} onChange={setTab} />
+      </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <span className="font-mono text-[11px] uppercase tracking-stamp text-muted-fg">
@@ -96,7 +145,10 @@ export function LeaderboardPage() {
             <>
               You stand at{' '}
               <span className="font-bold text-ink">rank #{myRank}</span>
+              {tab === 'today' ? ' today' : ''}
             </>
+          ) : tab === 'today' ? (
+            <>You haven't ranked today — play a round.</>
           ) : (
             <>You haven't ranked yet — play a round.</>
           )}
@@ -126,7 +178,7 @@ export function LeaderboardPage() {
             </p>
           </div>
         ) : board.length === 0 ? (
-          <EmptyState />
+          <EmptyState today={tab === 'today'} />
         ) : (
           <ol>
             <li className="hidden border-b-2 border-ink bg-secondary px-5 py-3 font-mono text-[10px] uppercase tracking-stamp text-muted-fg sm:grid sm:grid-cols-[60px,1fr,140px,80px,80px] sm:items-center">
@@ -188,10 +240,46 @@ export function LeaderboardPage() {
       </div>
 
       <p className="text-center font-mono text-[10px] uppercase tracking-stamp text-muted-fg">
-        {remoteEnabled
-          ? 'Stored in Supabase · shared across all players'
-          : 'Stored locally in your browser · add Supabase env to share'}
+        Keep trolling
       </p>
+    </div>
+  );
+}
+
+interface TabsProps {
+  value: TabId;
+  onChange: (next: TabId) => void;
+}
+
+function Tabs({ value, onChange }: TabsProps) {
+  const tabs: TabId[] = ['today', 'all'];
+  return (
+    <div
+      role="tablist"
+      aria-label="Leaderboard view"
+      className="inline-flex border-2 border-ink bg-paper shadow-stamp-sm"
+    >
+      {tabs.map((id) => {
+        const active = value === id;
+        return (
+          <button
+            key={id}
+            role="tab"
+            type="button"
+            aria-selected={active}
+            onClick={() => onChange(id)}
+            className={cn(
+              'px-5 py-2.5 font-mono text-[11px] uppercase tracking-stamp transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+              active
+                ? 'bg-ink text-paper'
+                : 'bg-paper text-ink hover:bg-secondary',
+            )}
+          >
+            {TAB_META[id].label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -225,21 +313,23 @@ function RankBadge({ rank }: { rank: number }) {
   );
 }
 
-function EmptyState() {
+function EmptyState({ today }: { today: boolean }) {
   return (
     <div className="flex flex-col items-center gap-4 px-6 py-16 text-center">
       <div className="flex h-16 w-16 items-center justify-center border-2 border-ink bg-paper shadow-stamp-sm">
         <Trophy className="h-8 w-8 text-muted-fg" />
       </div>
       <p className="font-display text-3xl uppercase leading-none">
-        No rounds yet
+        {today ? 'No rounds today' : 'No rounds yet'}
       </p>
       <p className="font-mono text-[11px] uppercase tracking-stamp text-muted-fg">
-        Play one round to take the top spot
+        {today
+          ? 'Be the first to log a score today'
+          : 'Play one round to take the top spot'}
       </p>
       <Button asChild variant="accent" className="mt-2">
         <Link to="/play">
-          <Play className="h-4 w-4" /> Play first round
+          <Play className="h-4 w-4" /> {today ? 'Play now' : 'Play first round'}
         </Link>
       </Button>
     </div>
