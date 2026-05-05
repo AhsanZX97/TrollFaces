@@ -12,6 +12,36 @@ export interface AuthState {
   signOut: () => Promise<void>;
 }
 
+const log = (...args: unknown[]) => console.log('[auth]', ...args);
+const warn = (...args: unknown[]) => console.warn('[auth]', ...args);
+const error = (...args: unknown[]) => console.error('[auth]', ...args);
+
+let didLogBoot = false;
+
+/** Strip the auth callback fragment/query so it doesn't leak into routing. */
+function logAndClearUrlError() {
+  if (typeof window === 'undefined') return;
+  const { search, hash } = window.location;
+  const params = new URLSearchParams(search);
+  const hashParams = new URLSearchParams(
+    hash.startsWith('#') ? hash.slice(1) : hash,
+  );
+  const err =
+    params.get('error') ??
+    params.get('error_code') ??
+    hashParams.get('error') ??
+    hashParams.get('error_code');
+  const desc =
+    params.get('error_description') ?? hashParams.get('error_description');
+  if (err || desc) {
+    error('OAuth callback returned an error:', { error: err, description: desc });
+    error(
+      'Most likely cause: redirect URI / client secret mismatch in Google ' +
+        'Cloud or the URL is missing from Supabase → Auth → URL Configuration → Redirect URLs.',
+    );
+  }
+}
+
 export function displayNameForUser(user: User | null): string {
   if (!user) return '';
   const meta = user.user_metadata ?? {};
@@ -32,24 +62,55 @@ export function useAuth(): AuthState {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    if (!didLogBoot) {
+      didLogBoot = true;
+      const url = import.meta.env.VITE_SUPABASE_URL?.trim() ?? '';
+      const host = url ? new URL(url).host : '(none)';
+      log('boot', {
+        remoteEnabled,
+        supabaseHost: host,
+        origin: window.location.origin,
+        href: window.location.href,
+      });
+      logAndClearUrlError();
+    }
+
     if (!remoteEnabled) {
       setStatus('disabled');
+      log('disabled — VITE_SUPABASE_URL/ANON_KEY not set');
       return;
     }
     const sb = getSupabase();
     if (!sb) {
       setStatus('disabled');
+      warn('disabled — supabase client failed to init');
       return;
     }
 
     let cancelled = false;
 
-    sb.auth.getSession().then(({ data }) => {
-      if (cancelled) return;
-      applySession(data.session ?? null);
-    });
+    sb.auth
+      .getSession()
+      .then(({ data, error: sessionErr }) => {
+        if (cancelled) return;
+        if (sessionErr) {
+          error('getSession() failed', sessionErr);
+        }
+        log(
+          'getSession resolved',
+          data.session
+            ? { user: data.session.user.email, expiresAt: data.session.expires_at }
+            : 'no session',
+        );
+        applySession(data.session ?? null);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        error('getSession threw', e);
+      });
 
-    const { data: sub } = sb.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = sb.auth.onAuthStateChange((event, session) => {
+      log('onAuthStateChange', event, session?.user?.email ?? '(no user)');
       applySession(session ?? null);
     });
 
@@ -72,20 +133,33 @@ export function useAuth(): AuthState {
 
   const signInWithGoogle = async () => {
     const sb = getSupabase();
-    if (!sb) throw new Error('Supabase is not configured');
-    const { error } = await sb.auth.signInWithOAuth({
+    if (!sb) {
+      error('signInWithGoogle called but Supabase is not configured');
+      throw new Error('Supabase is not configured');
+    }
+    const redirectTo = `${window.location.origin}/`;
+    log('signInWithGoogle starting', { redirectTo });
+    const { data, error: oauthErr } = await sb.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/`,
-      },
+      options: { redirectTo },
     });
-    if (error) throw new Error(error.message);
+    if (oauthErr) {
+      error('signInWithOAuth error (synchronous)', oauthErr);
+      throw new Error(oauthErr.message);
+    }
+    log('signInWithOAuth requested redirect', data?.url ?? '(no url)');
   };
 
   const signOut = async () => {
     const sb = getSupabase();
     if (!sb) return;
-    await sb.auth.signOut();
+    log('signOut starting');
+    const { error: signOutErr } = await sb.auth.signOut();
+    if (signOutErr) {
+      error('signOut error', signOutErr);
+      return;
+    }
+    log('signOut complete');
   };
 
   return { status, user, signInWithGoogle, signOut };

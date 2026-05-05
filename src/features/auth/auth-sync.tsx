@@ -17,11 +17,11 @@ export function AuthSync() {
 
   useEffect(() => {
     if (status === 'signed-in' && user) {
-      setPlayerFromAuth({
-        id: user.id,
-        displayName: displayNameForUser(user),
-      });
+      const displayName = displayNameForUser(user);
+      console.log('[auth] sync → player', { id: user.id, displayName });
+      setPlayerFromAuth({ id: user.id, displayName });
     } else if (status === 'signed-out') {
+      console.log('[auth] sync → clearing player (signed out)');
       clearPlayer();
     }
   }, [status, user, setPlayerFromAuth, clearPlayer]);
